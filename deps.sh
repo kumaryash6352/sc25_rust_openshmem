@@ -74,20 +74,47 @@ if [ ! -x rustc ]; then
 	popd
 fi
 
-# finally, shmembench
-if [ ! -d "$HERE/shmembench" ]; then
+# shmembench
+if [ ! -d "$HERE/build/shmembench" ]; then
+	pushd "$HERE/build"
 	git clone https://github.com/michael-beebe/shmembench.git shmembench
 	cd shmembench
 	git checkout edc0e30fd2eb8b86a0708325d0b4175408afd862
+	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench" ]; then
-	pushd "$HERE/shmembench"
+	pushd "$HERE/build/shmembench"
 	CC="$HERE/install/bin/oshcc" make -j
 	cp shmembench "$HERE/install/bin/shmembench"
+	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
-	pushd "$HERE/shmembench/rs"
+	pushd "$HERE/build/shmembench/rs"
 	rustup run --install nightly-2025-04-09 cargo build --release
 	cp ./target/release/shmembench-rs "$HERE/install/bin/shmembench-rs"
+	popd
+fi
+if [ ! -f "$HERE/install/bin/shmembench4py.py" ]; then
+	cp "$HERE/build/shmembench/py/main.py" "$HERE/install/bin/shmembench4py.py"
+fi
+if [ ! -f "$HERE/install/bin/compare.py" ]; then
+	cp "$HERE/build/shmembench/compare.py" "$HERE/install/bin/compare.py"
+fi
+
+# lastly, we need openshmem_rs separately
+# because in my infinite wisdom, the bfs
+# is part of the repo but shmembench-rs isn't
+if [ ! -f "$HERE/install/bin/bfs-graph-search" ]; then
+	pushd "$HERE/build"
+	if [ ! -f "$HERE/build/openshmem_rs" ]; then
+		git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
+		pushd "$HERE/build/openshmem_rs"
+		git checkout 244abed16d0445d5766698a5cc13aee3c188d1d1
+		popd
+	fi
+	cd openshmem_rs/bench/graphsearch
+	rustup run --install nightly-2025-04-09 cargo build --release
+	cp "$HERE/build/openshmem_rs/target/release/bfs-graph-search" "$HERE/install/bin/bfs-graph-search"
+	popd
 fi
 
