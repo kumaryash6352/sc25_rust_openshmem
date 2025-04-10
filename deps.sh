@@ -5,8 +5,15 @@ HERE=$(pwd)
 mkdir -p build
 mkdir -p install
 mkdir -p install/bin
+mkdir -p metadata
 
 export PATH=$HERE/install/bin:$PATH
+export CC=${CC:-cc}
+
+# dump env to metadata
+env > "$HERE/metadata/preenv"
+$CC --version > "$HERE/metadata/cc"
+$CC --version --verbose > "$HERE/metadata/ccv"
 
 # grab things we need
 
@@ -15,6 +22,7 @@ if [ ! -d "$HERE/install/bin/activate" ]; then
 	python3 -m venv "$HERE/install"
 fi
 source "$HERE/install/bin/activate"
+python3 --version > "$HERE/metadata/py"
 
 # ofi
 if [ ! -f "$HERE/install/lib/libfabric.so" ]; then
@@ -63,6 +71,7 @@ if ! python -c "import shmem4py" ; then
 	pip3 install .
 	popd
 fi
+python3 -m pip freeze > "$HERE/metadata/pipfreeze"
 
 # rustup
 if [ ! -x rustc ]; then
@@ -118,3 +127,14 @@ if [ ! -f "$HERE/install/bin/bfs-graph-search" ]; then
 	popd
 fi
 
+# and a script to activate the "environment"
+if [ ! -f "$HERE/activate" ]; then
+	cat > "$HERE/activate" << EOF
+export PATH="$HERE/install/bin:\$PATH"
+export LD_LIBRARY_PATH="$HERE/install/lib:\$LD_LIBRARY_PATH"
+export LIBRARY_PATH="$HERE/install/lib:\$LIBRARY_PATH"
+export C_INCLUDE_PATH="$HERE/install/include:\$C_INCLUDE_PATH"
+export CPLUS_INCLUDE_PATH="$HERE/install/include:\$CPLUS_INCLUDE_PATH"
+export CXX_INCLUDE_PATH="$HERE/install/include:\$CPLUS_INCLUDE_PATH"
+EOF
+fi
