@@ -113,18 +113,22 @@ fi
 # lastly, we need openshmem_rs separately
 # because in my infinite wisdom, the bfs
 # is part of the repo but shmembench-rs isn't
+if [ ! -f "$HERE/build/openshmem_rs" ]; then
+	git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
+	pushd "$HERE/build/openshmem_rs"
+	git checkout 9d2bdf3799148236b3d382b5aafdc609a5dff8c2
+	popd
+fi
 if [ ! -f "$HERE/install/bin/bfs-graph-search" ]; then
 	pushd "$HERE/build"
-	if [ ! -f "$HERE/build/openshmem_rs" ]; then
-		git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
-		pushd "$HERE/build/openshmem_rs"
-		git checkout 244abed16d0445d5766698a5cc13aee3c188d1d1
-		popd
-	fi
 	cd openshmem_rs/bench/graphsearch
 	rustup run --install nightly-2025-04-09 cargo build --release
 	cp "$HERE/build/openshmem_rs/target/release/bfs-graph-search" "$HERE/install/bin/bfs-graph-search"
 	popd
+fi
+if [! -f "$HERE/metadata/searchlist" ] || [ ! -f "$HERE/metadata/edgelist" ]; then
+	pushd "$HERE/build/openshmem_rs/bench/graphsearch"
+	"$HERE/install/bin/python3" make_edgelist.py
 fi
 
 # and a script to activate the "environment"
