@@ -8,21 +8,47 @@ mkdir -p install/bin
 mkdir -p metadata
 
 export PATH=$HERE/install/bin:$PATH
-export CC=${CC:-cc}
+env > "$HERE/metadata/preenv"
+
+if [ ! -f "$HERE/install/clang" ] && ! command clang -v; then
+	pushd "$HERE/build"
+	mkdir -p llvm
+	cd llvm
+	wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+	tar -xf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+	cp -r clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04/* "$HERE/install"
+	popd
+fi
 
 # dump env to metadata
-env > "$HERE/metadata/preenv"
 $CC --version > "$HERE/metadata/cc"
 $CC --version --verbose > "$HERE/metadata/ccv"
 
 # grab things we need
 
 # python venv
-if [ ! -d "$HERE/install/bin/activate" ]; then
+if [ ! -f "$HERE/install/bin/activate" ]; then
 	python3 -m venv "$HERE/install"
 fi
 source "$HERE/install/bin/activate"
 python3 --version > "$HERE/metadata/py"
+
+# hwloc because the one on the cluster is too old
+if [ ! -f "$HERE/install/bin/lstopo" ]; then
+	pushd "$HERE/build/"
+	if [ ! -d "$HERE/build/hwloc" ]; then
+		git clone https://github.com/open-mpi/hwloc hwloc
+		cd hwloc
+		git checkout 67f4b7e6a4ed7a62a23c11c6cba817b5d7bb207d
+		cd ..
+	fi
+	cd hwloc
+	./autogen.sh
+	./configure --prefix="$HERE/install"
+	make -j
+	make install
+	popd
+fi
 
 # ofi
 if [ ! -f "$HERE/install/lib/libfabric.so" ]; then
@@ -39,6 +65,21 @@ if [ ! -f "$HERE/install/lib/libfabric.so" ]; then
 	make -j
 	make install
 	popd
+fi
+
+# hdyra
+if [ ! -f "$HERE/install/bin/mpiexec.hydra" ]; then
+	pushd "$HERE/build/"
+	if [ ! -d "$HERE/build/hydra" ]; then
+		wget "https://www.mpich.org/static/downloads/4.3.0/hydra-4.3.0.tar.gz"
+		tar xzf hydra-4.3.0.tar.gz
+		mv hydra-4.3.0 hydra
+	fi
+	cd hydra
+	./autogen.sh
+	./configure --prefix="$HERE/install"
+	make -j
+	make install
 fi
 
 # sos
@@ -63,18 +104,23 @@ export SHMEM_INSTALL_DIR="$HERE/install"
 
 
 # shmem4py
+pip install --upgrade pip
 if ! python -c "import shmem4py" ; then
 	pushd "$HERE/build/"
-	git clone https://github.com/mpi4py/shmem4py shmem4py
+	if [ ! -d shmem4py ]; then
+		git clone https://github.com/mpi4py/shmem4py shmem4py
+		cd shmem4py
+		git checkout 0a3b0a019699ac8e46c54db9d0d2bf1941693e45
+		cd ..
+	fi
 	cd shmem4py
-	git checkout 0a3b0a019699ac8e46c54db9d0d2bf1941693e45
 	pip3 install .
 	popd
 fi
 python3 -m pip freeze > "$HERE/metadata/pipfreeze"
 
-# rustup
-if [ ! -x rustc ]; then
+# rust
+if [ ! -f "$HERE/install/bin/rustc" ]; then
 	pushd "$HERE/install/"
 	export RUSTUP_HOME="$HERE/install"
 	export CARGO_HOME="$HERE/install"
@@ -88,7 +134,7 @@ if [ ! -d "$HERE/build/shmembench" ]; then
 	pushd "$HERE/build"
 	git clone https://github.com/michael-beebe/shmembench.git shmembench
 	cd shmembench
-	git checkout edc0e30fd2eb8b86a0708325d0b4175408afd862
+	git checkout 4524ee972a97e971951c055b897ca2e501791bdc
 	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench" ]; then
@@ -107,15 +153,18 @@ if [ ! -f "$HERE/install/bin/shmembench4py.py" ]; then
 	cp "$HERE/build/shmembench/py/main.py" "$HERE/install/bin/shmembench4py.py"
 fi
 if [ ! -f "$HERE/install/bin/compare.py" ]; then
+	sed -i "s|/tmp/results|$HERE/results|g" "$HERE/build/shmembench/compare.py"
+	sed -i "s|./py/main.py|$HERE/install/bin/shmembench4py.py|g" "$HERE/build/shmembench/compare.py"
 	cp "$HERE/build/shmembench/compare.py" "$HERE/install/bin/compare.py"
 fi
 
 # lastly, we need openshmem_rs separately
 # because in my infinite wisdom, the bfs
 # is part of the repo but shmembench-rs isn't
-if [ ! -f "$HERE/build/openshmem_rs" ]; then
+if [ ! -d "$HERE/build/openshmem_rs" ]; then
+	pushd "$HERE/build/"
 	git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
-	pushd "$HERE/build/openshmem_rs"
+	cd openshmem_rs
 	git checkout 9d2bdf3799148236b3d382b5aafdc609a5dff8c2
 	popd
 fi
@@ -126,9 +175,12 @@ if [ ! -f "$HERE/install/bin/bfs-graph-search" ]; then
 	cp "$HERE/build/openshmem_rs/target/release/bfs-graph-search" "$HERE/install/bin/bfs-graph-search"
 	popd
 fi
-if [! -f "$HERE/metadata/searchlist" ] || [ ! -f "$HERE/metadata/edgelist" ]; then
-	pushd "$HERE/build/openshmem_rs/bench/graphsearch"
+if [ ! -f "$HERE/metadata/searchlist" ] || [ ! -f "$HERE/metadata/edgelist" ]; then
+	pushd "$HERE/build/openshmem_rs/bench/graphsearch/src"
 	"$HERE/install/bin/python3" make_edgelist.py
+	cp searchlist "$HERE/metadata/searchlist"
+	cp edgelist "$HERE/metadata/edgelist"
+	popd
 fi
 
 # and a script to activate the "environment"
