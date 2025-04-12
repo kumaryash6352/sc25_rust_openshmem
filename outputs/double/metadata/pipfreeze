@@ -1,0 +1,4 @@
+cffi==1.17.1
+numpy==1.24.4
+pycparser==2.22
+shmem4py @ file:///lustre/scratch/ykumar/16364476/build/shmem4py
