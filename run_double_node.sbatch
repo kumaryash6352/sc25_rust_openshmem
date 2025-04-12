@@ -9,11 +9,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1         
 
-if ! command -v clang &> /dev/null; then
-	module load llvm
-fi
-
-export CC=$(which gcc)
+module load gcc python
 WORK_DIR="/lustre/scratch/$USER/$SLURM_JOB_ID"
 mkdir -p $WORK_DIR 
 cp -r ./deps.sh $WORK_DIR

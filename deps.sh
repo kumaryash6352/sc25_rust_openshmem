@@ -155,6 +155,7 @@ fi
 if [ ! -f "$HERE/install/bin/compare.py" ]; then
 	sed -i "s|/tmp/results|$HERE/results|g" "$HERE/build/shmembench/compare.py"
 	sed -i "s|./py/main.py|$HERE/install/bin/shmembench4py.py|g" "$HERE/build/shmembench/compare.py"
+	sed -i "s|median_n = 11|median_n = 25|g" "$HERE/build/shmembench/compare.py"
 	cp "$HERE/build/shmembench/compare.py" "$HERE/install/bin/compare.py"
 fi
 
