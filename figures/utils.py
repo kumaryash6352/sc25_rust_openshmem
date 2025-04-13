@@ -32,7 +32,7 @@ def setup_style():
     return color_palette
 
 
-def style_plot(ax, title, df):
+def style_plot(ax, title, df, x_rotation=45):
     """Apply common styling to a plot
 
     Applies a consistent style to the provided matplotlib axis. This includes:
@@ -47,6 +47,7 @@ def style_plot(ax, title, df):
         ax (matplotlib.axes.Axes): The axis to style
         title (str): The plot title (currently unused)
         df (pandas.DataFrame): The data frame containing the plot data (used for x-axis range)
+        x_rotation (int): Rotation angle for x-axis labels, default is 45 degrees
     """
     ax.grid(True, which="both", linestyle="--", alpha=0.7)
     ax.set_xscale("log", base=2)
@@ -91,7 +92,7 @@ def style_plot(ax, title, df):
     ]
 
     ax.set_xticks(size_ticks)
-    ax.set_xticklabels(size_labels, rotation=45, fontweight="bold")
+    ax.set_xticklabels(size_labels, rotation=x_rotation, fontweight="bold", ha="right")
 
     # Format y-axis based on current scale
     current_scale = ax.get_yscale()
@@ -147,6 +148,9 @@ def style_plot(ax, title, df):
     ax.spines["right"].set_visible(True)
     ax.spines["left"].set_visible(True)
     ax.spines["bottom"].set_visible(True)
+    
+    # Adjust bottom margin to accommodate rotated labels
+    plt.tight_layout()
 
 
 def read_data(filename, directory):

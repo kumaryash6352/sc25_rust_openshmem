@@ -2,12 +2,10 @@ from utils import read_data, create_plot, style_plot, save_plot
 
 
 def generate_latency_plot(color_palette, filename, directory, output_prefix):
-    """Generate latency plots for get operations with both linear and log scales
+    """Generate latency plot for get operations with logarithmic scale
 
-    Creates plots comparing latency between C, Rust, and Python implementations of shmem_get operations.
-    Generates two versions of each plot:
-    1. With linear y-axis scaling
-    2. With logarithmic y-axis scaling
+    Creates a plot comparing latency between C, Rust, and Python implementations of shmem_get operations
+    using logarithmic y-axis scaling for better visualization of performance differences.
 
     Args:
         color_palette (list): List of colors for the plot, expects at least 3 colors:
@@ -20,29 +18,13 @@ def generate_latency_plot(color_palette, filename, directory, output_prefix):
                            measurements or "net" for network measurements
 
     Returns:
-        None. The plots are saved to disk as PDF files.
+        None. The plot is saved to disk as a PDF file.
     """
     # Read data
     df = read_data(filename, directory)
     if df is None:
         return
 
-    # Generate linear scale plot
-    generate_latency_plot_with_scale(color_palette, df, output_prefix, scale="linear")
-    
-    # Generate log scale plot
-    generate_latency_plot_with_scale(color_palette, df, output_prefix, scale="log")
-
-
-def generate_latency_plot_with_scale(color_palette, df, output_prefix, scale):
-    """Helper function to generate latency plot with specified y-axis scale
-
-    Args:
-        color_palette (list): List of colors for the plot
-        df (pandas.DataFrame): DataFrame containing the data
-        output_prefix (str): Prefix for the output filename
-        scale (str): Y-axis scale, either "linear" or "log"
-    """
     # Create the plot
     fig, ax = create_plot()
 
@@ -82,23 +64,22 @@ def generate_latency_plot_with_scale(color_palette, df, output_prefix, scale):
         markeredgewidth=2,
     )
 
-    # Set y-axis scale
-    ax.set_yscale(scale)
+    # Set y-axis to logarithmic scale
+    ax.set_yscale("log")
     ax.set_ylabel("Latency (μs)", fontsize=14, fontweight="bold", labelpad=15)
-    style_plot(ax, "shmem_get Latency", df)
+    
+    # Style the plot with increased x-axis label rotation to prevent overlap
+    style_plot(ax, "shmem_get Latency", df, x_rotation=30)
 
-    # Save the plot with scale indicator in filename
-    scale_suffix = "_log" if scale == "log" else "_linear"
-    save_plot(fig, f"get_{output_prefix}_latency{scale_suffix}.pdf", "get")
+    # Save the plot
+    save_plot(fig, f"get_{output_prefix}_latency.pdf", "get")
 
 
 def generate_bandwidth_plot(color_palette, filename, directory, output_prefix):
-    """Generate bandwidth plots for get operations with both linear and log scales
+    """Generate bandwidth plot for get operations with logarithmic scale
 
-    Creates plots comparing bandwidth between C, Rust, and Python implementations of shmem_get operations.
-    Generates two versions of each plot:
-    1. With linear y-axis scaling
-    2. With logarithmic y-axis scaling
+    Creates a plot comparing bandwidth between C, Rust, and Python implementations of shmem_get operations
+    using logarithmic y-axis scaling for better visualization of performance differences.
 
     Args:
         color_palette (list): List of colors for the plot, expects at least 3 colors:
@@ -111,7 +92,7 @@ def generate_bandwidth_plot(color_palette, filename, directory, output_prefix):
                            measurements or "net" for network measurements
 
     Returns:
-        None. The plots are saved to disk as PDF files.
+        None. The plot is saved to disk as a PDF file.
     """
     # Read data
     df = read_data(filename, directory)
@@ -126,22 +107,6 @@ def generate_bandwidth_plot(color_palette, filename, directory, output_prefix):
         df["RS MiBPS"] = df["Msg Size (b)"] / df["RS (raw, us)"] * 0.95367431640625
         df["Py MiBPS"] = df["Msg Size (b)"] / df["Py (raw, us)"] * 0.95367431640625
 
-    # Generate linear scale plot
-    generate_bandwidth_plot_with_scale(color_palette, df, output_prefix, scale="linear")
-    
-    # Generate log scale plot
-    generate_bandwidth_plot_with_scale(color_palette, df, output_prefix, scale="log")
-
-
-def generate_bandwidth_plot_with_scale(color_palette, df, output_prefix, scale):
-    """Helper function to generate bandwidth plot with specified y-axis scale
-
-    Args:
-        color_palette (list): List of colors for the plot
-        df (pandas.DataFrame): DataFrame containing the data
-        output_prefix (str): Prefix for the output filename
-        scale (str): Y-axis scale, either "linear" or "log"
-    """
     # Create the plot
     fig, ax = create_plot()
 
@@ -181,14 +146,15 @@ def generate_bandwidth_plot_with_scale(color_palette, df, output_prefix, scale):
         markeredgewidth=2,
     )
 
-    # Set y-axis scale
-    ax.set_yscale(scale)
+    # Set y-axis to logarithmic scale
+    ax.set_yscale("log")
     ax.set_ylabel("Bandwidth (MiB/s)", fontsize=14, fontweight="bold", labelpad=15)
-    style_plot(ax, "shmem_get Bandwidth", df)
+    
+    # Style the plot with increased x-axis label rotation to prevent overlap
+    style_plot(ax, "shmem_get Bandwidth", df, x_rotation=30)
 
-    # Save the plot with scale indicator in filename
-    scale_suffix = "_log" if scale == "log" else "_linear"
-    save_plot(fig, f"get_{output_prefix}_bandwidth{scale_suffix}.pdf", "get")
+    # Save the plot
+    save_plot(fig, f"get_{output_prefix}_bandwidth.pdf", "get")
 
 
 def generate_plots(color_palette):
@@ -198,14 +164,12 @@ def generate_plots(color_palette):
     Generates both latency and bandwidth plots for:
     - Local (same node) operations
     - Network (across nodes) operations
-    
-    For each plot, both linear and logarithmic y-axis scales are generated.
 
     The plots are saved in the 'figures/get' directory with appropriate filenames:
-    - get_local_latency_linear.pdf / get_local_latency_log.pdf
-    - get_local_bandwidth_linear.pdf / get_local_bandwidth_log.pdf
-    - get_net_latency_linear.pdf / get_net_latency_log.pdf
-    - get_net_bandwidth_linear.pdf / get_net_bandwidth_log.pdf
+    - get_local_latency.pdf
+    - get_local_bandwidth.pdf
+    - get_net_latency.pdf
+    - get_net_bandwidth.pdf
 
     Args:
         color_palette (list): List of colors for the plots, expects at least 3 colors:
