@@ -135,6 +135,7 @@ if [ ! -d "$HERE/build/shmembench" ]; then
 	git clone https://github.com/michael-beebe/shmembench.git shmembench
 	cd shmembench
 	git checkout 4524ee972a97e971951c055b897ca2e501791bdc
+	sed -i "s|-O2|-O3 -flto|g" "$HERE/build/shmembench/Makefile" || true
 	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench" ]; then
@@ -155,7 +156,7 @@ fi
 if [ ! -f "$HERE/install/bin/compare.py" ]; then
 	sed -i "s|/tmp/results|$HERE/results|g" "$HERE/build/shmembench/compare.py"
 	sed -i "s|./py/main.py|$HERE/install/bin/shmembench4py.py|g" "$HERE/build/shmembench/compare.py"
-	sed -i "s|median_n = 11|median_n = 25|g" "$HERE/build/shmembench/compare.py"
+	sed -i "s|median_n = 11|median_n = 33|g" "$HERE/build/shmembench/compare.py"
 	cp "$HERE/build/shmembench/compare.py" "$HERE/install/bin/compare.py"
 fi
 
