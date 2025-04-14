@@ -168,7 +168,7 @@ if [ ! -d "$HERE/build/openshmem_rs" ]; then
 	pushd "$HERE/build/"
 	git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
 	cd openshmem_rs
-	git checkout 9d2bdf3799148236b3d382b5aafdc609a5dff8c2
+	git checkout b3c9eee3e533a3dfe04cd2b7aaa5b60b1202d896
 	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
