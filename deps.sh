@@ -1,3 +1,4 @@
+#!/bin/bash
 
 set -euxo pipefail
 
@@ -19,6 +20,7 @@ if [ ! -f "$HERE/install/clang" ] && ! command clang -v; then
 	cp -r clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04/* "$HERE/install"
 	popd
 fi
+CC=clang
 
 # dump env to metadata
 $CC --version > "$HERE/metadata/cc"
@@ -129,45 +131,61 @@ if [ ! -f "$HERE/install/bin/rustc" ]; then
 	popd
 fi
 
+# actually, we're using shmemchair now
 # shmembench
-if [ ! -d "$HERE/build/shmembench" ]; then
-	pushd "$HERE/build"
-	git clone https://github.com/michael-beebe/shmembench.git shmembench
-	cd shmembench
-	git checkout 4524ee972a97e971951c055b897ca2e501791bdc
-	sed -i "s|-O2|-O3 -flto|g" "$HERE/build/shmembench/Makefile" || true
-	popd
-fi
-if [ ! -f "$HERE/install/bin/shmembench" ]; then
-	pushd "$HERE/build/shmembench"
-	CC="$HERE/install/bin/oshcc" make -j
-	cp shmembench "$HERE/install/bin/shmembench"
-	popd
-fi
-if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
-	pushd "$HERE/build/shmembench/rs"
-	rustup run --install nightly-2025-04-09 cargo build --release
-	cp ./target/release/shmembench-rs "$HERE/install/bin/shmembench-rs"
-	popd
-fi
-if [ ! -f "$HERE/install/bin/shmembench4py.py" ]; then
-	cp "$HERE/build/shmembench/py/main.py" "$HERE/install/bin/shmembench4py.py"
-fi
-if [ ! -f "$HERE/install/bin/compare.py" ]; then
-	sed -i "s|/tmp/results|$HERE/results|g" "$HERE/build/shmembench/compare.py"
-	sed -i "s|./py/main.py|$HERE/install/bin/shmembench4py.py|g" "$HERE/build/shmembench/compare.py"
-	sed -i "s|median_n = 11|median_n = 33|g" "$HERE/build/shmembench/compare.py"
-	cp "$HERE/build/shmembench/compare.py" "$HERE/install/bin/compare.py"
-fi
+# if [ ! -d "$HERE/build/shmembench" ]; then
+# 	pushd "$HERE/build"
+# 	git clone https://github.com/michael-beebe/shmembench.git shmembench
+# 	cd shmembench
+# 	git checkout 4524ee972a97e971951c055b897ca2e501791bdc
+# 	sed -i "s|-O2|-O3 -flto|g" "$HERE/build/shmembench/Makefile" || true
+# 	popd
+# fi
+# if [ ! -f "$HERE/install/bin/shmembench" ]; then
+# 	pushd "$HERE/build/shmembench"
+# 	CC="$HERE/install/bin/oshcc" make -j
+# 	cp shmembench "$HERE/install/bin/shmembench"
+# 	popd
+# fi
+# if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
+# 	pushd "$HERE/build/shmembench/rs"
+# 	rustup run --install nightly-2025-04-09 cargo build --release
+# 	cp ./target/release/shmembench-rs "$HERE/install/bin/shmembench-rs"
+# 	popd
+# fi
+# if [ ! -f "$HERE/install/bin/shmembench4py.py" ]; then
+# 	cp "$HERE/build/shmembench/py/main.py" "$HERE/install/bin/shmembench4py.py"
+# fi
+# if [ ! -f "$HERE/install/bin/compare.py" ]; then
+# 	sed -i "s|/tmp/results|$HERE/results|g" "$HERE/build/shmembench/compare.py"
+# 	sed -i "s|./py/main.py|$HERE/install/bin/shmembench4py.py|g" "$HERE/build/shmembench/compare.py"
+# 	sed -i "s|median_n = 11|median_n = 33|g" "$HERE/build/shmembench/compare.py"
+# 	cp "$HERE/build/shmembench/compare.py" "$HERE/install/bin/compare.py"
+# fi
 
-# lastly, we need openshmem_rs separately
-# because in my infinite wisdom, the bfs
-# is part of the repo but shmembench-rs isn't
+# the openshmem_rs in question
 if [ ! -d "$HERE/build/openshmem_rs" ]; then
 	pushd "$HERE/build/"
 	git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
 	cd openshmem_rs
 	git checkout 9d2bdf3799148236b3d382b5aafdc609a5dff8c2
+	popd
+fi
+if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
+	pushd "$HERE/build/openshmem_rs/bench/shmemchair/rs"
+	rustup run --install nightly-2025-04-09 cargo build --release
+	cp ./target/release/shmembench-rs "$HERE/install/bin/shmembench-rs"
+	popd
+fi
+if [ ! -f "$HERE/install/bin/shmembench" ]; then
+	pushd "$HERE/build/openshmem_rs/bench/shmemchair/c"
+	oshcc -O3 -flto main.c -o shmembench
+	cp shmembench "$HERE/install/bin/shmembench"
+	popd
+fi
+if [ ! -f "$HERE/install/bin/shmembench.py" ]; then
+	pushd "$HERE/build/openshmem_rs/bench/shmemchair/py"
+	cp main.py "$HERE/install/bin/shmembench.py"
 	popd
 fi
 if [ ! -f "$HERE/install/bin/bfs-graph-search" ]; then
