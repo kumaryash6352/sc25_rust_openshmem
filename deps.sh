@@ -168,7 +168,7 @@ if [ ! -d "$HERE/build/openshmem_rs" ]; then
 	pushd "$HERE/build/"
 	git clone https://github.com/kumaryash6352/openshmem_rs.git openshmem_rs
 	cd openshmem_rs
-	git checkout b3c9eee3e533a3dfe04cd2b7aaa5b60b1202d896
+	git checkout 22aea4aa6fb6e09621f7395e584a5737ce5ac12d
 	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
@@ -179,8 +179,17 @@ if [ ! -f "$HERE/install/bin/shmembench-rs" ]; then
 fi
 if [ ! -f "$HERE/install/bin/shmembench" ]; then
 	pushd "$HERE/build/openshmem_rs/bench/shmemchair/c"
-	oshcc -O3 -flto main.c -o shmembench
+	oshcc -O3 main.c -o shmembench
 	cp shmembench "$HERE/install/bin/shmembench"
+	popd
+fi
+if [ ! -f "$HERE/install/bin/compare.py" ]; then
+	pushd "$HERE/build/openshmem_rs/bench/shmemchair/"
+ 	sed -i "s|\"--benchtype\", \"latency\", ||g" compare.py 
+ 	sed -i "s|\"./py/main.py\"|\"$HERE/install/bin/shmembench.py\"|g" compare.py 
+ 	sed -i "s|\"--min\", \"1\", \"--max\", \"1048576\"|\"--msg-size-max\", \"1048577\"|g" compare.py 
+ 	sed -i "s|\"--bench\", cname|\"--bench\", rsname|g" compare.py 
+	cp compare.py "$HERE/install/bin/compare.py"
 	popd
 fi
 if [ ! -f "$HERE/install/bin/shmembench.py" ]; then
@@ -195,7 +204,7 @@ if [ ! -f "$HERE/install/bin/bfs-graph-search" ]; then
 	cp "$HERE/build/openshmem_rs/target/release/bfs-graph-search" "$HERE/install/bin/bfs-graph-search"
 	popd
 fi
-if [ ! -f "$HERE/metadata/searchlist" ] || [ ! -f "$HERE/metadata/edgelist" ]; then
+if false && [ ! -f "$HERE/metadata/searchlist" ] || [ ! -f "$HERE/metadata/edgelist" ]; then
 	pushd "$HERE/build/openshmem_rs/bench/graphsearch/src"
 	"$HERE/install/bin/python3" make_edgelist.py
 	cp searchlist "$HERE/metadata/searchlist"
