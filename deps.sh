@@ -186,7 +186,8 @@ fi
 if [ ! -f "$HERE/install/bin/compare.py" ]; then
 	pushd "$HERE/build/openshmem_rs/bench/shmemchair/"
  	sed -i "s|\"--benchtype\", \"latency\", ||g" compare.py 
- 	sed -i "s|\"./py/main.py\"|\"$HERE/install/bin/shmembench.py\"|g" compare.py 
+ 	sed -i "s|/tmp/results|$HERE/results|g" compare.py
+	sed -i "s|\"./py/main.py\"|\"$HERE/install/bin/shmembench.py\"|g" compare.py 
  	sed -i "s|\"--min\", \"1\", \"--max\", \"1048576\"|\"--msg-size-max\", \"1048577\"|g" compare.py 
  	sed -i "s|\"--bench\", cname|\"--bench\", rsname|g" compare.py 
 	cp compare.py "$HERE/install/bin/compare.py"
